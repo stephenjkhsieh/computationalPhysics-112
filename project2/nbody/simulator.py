@@ -283,6 +283,34 @@ def _calculate_acceleration_kernel(nparticles, masses, positions, accelerations,
 
     return accelerations
 
+def _calculate_acceleration_cuda(nparticles, masses, positions, accelerations, G, rsoft):
+    """
+    Calculate the acceleration of the particles
+
+    :param particles: Particles, the particles to calculate the acceleration
+    """
+    masses = cp.asarray(masses)
+    positions = cp.asarray(positions)
+    accelerations = cp.asarray(accelerations)
+
+    rel_pos = positions[:,None] - positions[None,:]
+    rel_dist = cp.linalg.norm(rel_pos, axis=2) + rsoft
+    rel_force = - G * masses[:,0,None] * masses[:,0] / rel_dist**3
+    accelerations += rel_force.sum(axis=1) / masses[:,0]
+    accelerations -= rel_force.sum(axis=0) / masses[:,0]
+
+    # kernel for acceleration calculation
+    for i in range(nparticles):
+        for j in range(nparticles):
+            if (j>i): 
+                rij = positions[i,:] - positions[j,:]
+                r = np.sqrt(np.sum(rij**2) + rsoft**2)
+                force = - G * masses[i,0] * masses[j,0] * rij / r**3
+                accelerations[i,:] += force[:] / masses[i,0]
+                accelerations[j,:] -= force[:] / masses[j,0]
+
+    return accelerations
+
 # @njit(parallel=True)
 # def _calculate_acceleration_energy_kernel(nparticles, masses, positions, velocities ,accelerations, G, rsoft):
 #     """

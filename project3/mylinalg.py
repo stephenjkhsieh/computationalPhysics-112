@@ -21,9 +21,13 @@ def solveLowerTriangular(L,b):
     """
     n  = len(b)
     x  = np.zeros(n)
-
-    # TODO
+    bs = np.copy(b)
+    bs = bs.astype(float)
     
+    # TODO: implement the algorithm
+    for i in np.arange(n):
+        x[i] = bs[i] / L[i,i]
+        bs[i+1:] -= np.dot(x[i], L[i+1:,i])
     return x
 
 
@@ -41,8 +45,13 @@ def solveUpperTriangular(U,b):
     """
     n  = len(b)
     x  = np.zeros(n)
- 
-    # TODO
+    bs = np.copy(b)
+    bs = bs.astype(float)
+    
+    # TODO: implement the algorithm
+    for i in np.arange(n-1,-1,-1):
+        x[i] = bs[i] / U[i,i]
+        bs[:i] -= np.dot(x[i], U[:i,i])
     
     return x
 
@@ -60,11 +69,27 @@ def lu(A):
 
     """
     n  = len(A)
-    L  = np.zeros((n,n))
+    L  = np.identity(n)
     U  = np.zeros((n,n))
+    # M  = np.zeros((n,n))
+    As = np.copy(A)
 
     # TODO
-    
+    for k in np.arange(n):
+        if As[k,k] == 0:
+            raise ValueError(f"A[{k},{k}] is singular")
+        
+        for i in np.arange(k+1,n):
+            L[i,k] = As[i,k] / As[k,k]
+
+        for j in np.arange(k+1,n):
+            for i in np.arange(k+1,n):
+                As[i,j] -= L[i,k] * As[k,j]
+        
+        for i in np.arange(n):
+            # L[i, :i] = M[i, :i]
+            U[i, i:] = As[i, i:]
+
     return L, U
 
 
@@ -83,7 +108,13 @@ def lu_solve(A,b):
 
     x = np.zeros(len(b))
 
-    # TODO
+    l, u = lu(A)
 
+    # TODO
+    # L y = b
+    y = solveLowerTriangular(l, b)
+
+    # U x = y
+    x = solveUpperTriangular(u, y)
 
     return x
