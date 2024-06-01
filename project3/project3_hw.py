@@ -152,7 +152,7 @@ def jacobi(u, uold, nx, ny, dx, dy, rho):
 
     for i in prange(1, nx-1):
         for j in range(1, ny-1):
-            u[i, j] = 0.25 * (uold[i - 1, j] + uold[i + 1, j] + uold[i, j - 1] + uold[i, j + 1] - dx*dy*rho[i,j])
+            u[i, j] = 0.25 * (uold[i - 1, j] + uold[i + 1, j] + uold[i, j - 1] + uold[i, j + 1] - dx*dy*rho[i-1,j-1])
     return u
 
 @njit(parallel=True)
@@ -179,10 +179,9 @@ def gauss_seidel(u, uold, nx, ny, dx, dy, rho):
 
     for i in prange(1, nx-1):
         for j in range(1, ny-1):
-            u[i, j] = 0.25 * (u[i - 1, j] + u[i, j - 1] + uold[i + 1, j] + uold[i, j + 1] - dx*dy*rho[i,j])
+            u[i, j] = 0.25 * (u[i - 1, j] + u[i, j - 1] + uold[i + 1, j] + uold[i, j + 1] - dx*dy*rho[i-1,j-1])
     return u
 
-# @njit(parallel=True)
 def sor(u, uold, nx, ny, dx, dy, rho, w):
     """
     Solve Laplace equation using Successive Over-Relaxation (SOR) method.
@@ -282,199 +281,134 @@ def plot_solution(xx,yy,u):
     plt.show()
     plt.close()
 
-# # %% Problem 1
-# N = 3
-# A = generate_the_laplace_matrix_with_size(N)
-# print(A)
-# A = csc_matrix(A)
-# b = generate_the_rhs_vector_with_size(N=N)
-# print(b)
-# x = splinalg.spsolve(A,b)
-# print(x)
-# # check the solution
-# print(A.dot(x) - b)
+# %% Problem 1
+N = 3
+A = generate_the_laplace_matrix_with_size(N)
+print(A)
+A = csc_matrix(A)
+b = generate_the_rhs_vector_with_size(N=N)
+print(b)
+x = splinalg.spsolve(A,b)
+print(x)
+# check the solution
+print(A.dot(x) - b)
 
-# u = convert_solution(x)
-# print(u.T)
+u = convert_solution(x)
+print(u.T)
 
-# # %% Problem 2
-# N = 128
-# xx,yy, rho = generate_rho(N=N, xmin=-5, xmax=5, ymin=-5,ymax=5)
-# # plot_solution(xx,yy,rho)
+# %% Problem 2
+N = 128
+xx,yy, rho = generate_rho(N=N, xmin=-5, xmax=5, ymin=-5,ymax=5)
+# plot_solution(xx,yy,rho)
 
-# A = generate_the_laplace_matrix_with_size(N=N)
-# A = csc_matrix(A)
-# b = generate_the_rhs_vector_with_size(N=N, rho=rho, dx=10/(N-1), dy=10/(N-1))
-# x = splinalg.spsolve(A,b)
-# u = convert_solution(x).T
+A = generate_the_laplace_matrix_with_size(N=N)
+A = csc_matrix(A)
+b = generate_the_rhs_vector_with_size(N=N, rho=rho, dx=10/(N-1), dy=10/(N-1))
+x = splinalg.spsolve(A,b)
+u = convert_solution(x).T
 
-# plot_solution(xx,yy,u)
+plot_solution(xx,yy,u)
 
-# # %% Problem 3
-# N = 128
-# _,_, rho = generate_rho(N=N, xmin=-5, xmax=5, ymin=-5, ymax=5)
+# %% Problem 3
+N = 128
+_,_, rho = generate_rho(N=N, xmin=-5, xmax=5, ymin=-5, ymax=5)
 
-# xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-# u, iters_j, errors_j = relax(u, method='jacobi', tolerance=1e-6, maxiter=3e4, rho=rho, dx=dx, dy=dy)
-# print('Jacobi relaxation done')
+xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
+u, iters_j, errors_j = relax(u, method='jacobi', tolerance=1e-6, maxiter=3e4, rho=rho, dx=dx, dy=dy)
+print('Jacobi relaxation done')
 
-# xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-# u, iters_gs, errors_gs = relax(u, method='gauss-seidel', tolerance=1e-6, maxiter=3e4, rho=rho, dx=dx, dy=dy)
-# print('Gauss-Seidel relaxation done')
+xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
+u, iters_gs, errors_gs = relax(u, method='gauss-seidel', tolerance=1e-6, maxiter=3e4, rho=rho, dx=dx, dy=dy)
+print('Gauss-Seidel relaxation done')
 
-# xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-# u, iters_sor12, errors_sor12 = relax(u, method='sor', tolerance=1e-6, maxiter=3e4, rho=rho, dx=dx, dy=dy, w=1.2)
-# print('SOR w=1.2 relaxation done')
+xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
+u, iters_sor12, errors_sor12 = relax(u, method='sor', tolerance=1e-6, maxiter=3e4, rho=rho, dx=dx, dy=dy, w=1.2)
+print('SOR w=1.2 relaxation done')
 
-# xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-# u, iters_sor15, errors_sor15 = relax(u, method='sor', tolerance=1e-6, maxiter=3e4, rho=rho, dx=dx, dy=dy, w=1.5)
-# print('SOR w=1.5 relaxation done')
+xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
+u, iters_sor15, errors_sor15 = relax(u, method='sor', tolerance=1e-6, maxiter=3e4, rho=rho, dx=dx, dy=dy, w=1.5)
+print('SOR w=1.5 relaxation done')
 
-# xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-# u, iters_sor20, errors_sor20 = relax(u, method='sor', tolerance=1e-6, maxiter=1e3, rho=rho, dx=dx, dy=dy, w=2.0)
-# print('SOR w=2.0 relaxation done')
-# # %%
-# # plot errors vs iterations
-# plt.figure(1, figsize=(6,6))
-# plt.plot(iters_j, errors_j, label='Jacobi')
-# plt.plot(iters_gs, errors_gs, label='Gauss-Seidel')
-# plt.plot(iters_sor12, errors_sor12, label='SOR w=1.2')
-# plt.plot(iters_sor15, errors_sor15, label='SOR w=1.5')
-# plt.plot(iters_sor20, errors_sor20, label='SOR w=2.0')
-# plt.yscale('log')
-# plt.xlabel('Iterations')
-# plt.ylabel('Error')
-# plt.legend()
-# plt.show()
-# plt.close()
+xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
+u, iters_sor20, errors_sor20 = relax(u, method='sor', tolerance=1e-6, maxiter=1e3, rho=rho, dx=dx, dy=dy, w=2.0)
+print('SOR w=2.0 relaxation done')
+# %%
+# plot errors vs iterations
+plt.figure(1, figsize=(6,6))
+plt.plot(iters_j, errors_j, label='Jacobi')
+plt.plot(iters_gs, errors_gs, label='Gauss-Seidel')
+plt.plot(iters_sor12, errors_sor12, label='SOR w=1.2')
+plt.plot(iters_sor15, errors_sor15, label='SOR w=1.5')
+plt.plot(iters_sor20, errors_sor20, label='SOR w=2.0')
+plt.yscale('log')
+plt.xlabel('Iterations')
+plt.ylabel('Error')
+plt.legend()
+plt.show()
+plt.close()
 
-# # %% Problem 4
-# spar_time = []
-# jac_time = []
-# gs_time = []
-# sor12_time = []
-# sor15_time = []
-
-# for N in [128, 64, 32]:
-#     xx,yy, rho = generate_rho(N=N, xmin=-5, xmax=5, ymin=-5,ymax=5)
-#     A = generate_the_laplace_matrix_with_size(N=N)
-#     A = csc_matrix(A)
-#     b = generate_the_rhs_vector_with_size(N=N, rho=rho, dx=10/(N-1), dy=10/(N-1))
-#     start = time.time()
-#     x = splinalg.spsolve(A,b)
-#     end = time.time()
-#     spar_time.append(end-start)
-#     print('Sparse solver done')
-#     _,_, rho = generate_rho(N=N, xmin=-5, xmax=5, ymin=-5, ymax=5)
-
-#     xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-#     start = time.time()
-#     u, iters_j, errors_j = relax(u, method='jacobi', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy)
-#     end = time.time()
-#     jac_time.append(end-start)
-#     print('Jacobi relaxation done')
-
-
-#     xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-#     start = time.time()
-#     u, iters_gs, errors_gs = relax(u, method='gauss-seidel', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy)
-#     end = time.time()
-#     gs_time.append(end-start)
-#     print('Gauss-Seidel relaxation done')
-
-#     xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-#     start = time.time()
-#     u, iters_sor12, errors_sor12 = relax(u, method='sor', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy, w=1.2)
-#     end = time.time()
-#     sor12_time.append(end-start)
-#     print('SOR w=1.2 relaxation done')
-
-#     xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-#     start = time.time()
-#     u, iters_sor15, errors_sor15 = relax(u, method='sor', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy, w=1.5)
-#     end = time.time()
-#     sor15_time.append(end-start)
-#     print('SOR w=1.5 relaxation done')
-
-# # %%
-# plt.figure(1, figsize=(6,6))
-# plt.plot([128, 64, 32], spar_time, label='Sparse solver')
-# plt.plot([128, 64, 32], jac_time, label='Jacobi')
-# plt.plot([128, 64, 32], gs_time, label='Gauss-Seidel')
-# plt.plot([128, 64, 32], sor12_time, label='SOR w=1.2')
-# plt.plot([128, 64, 32], sor15_time, label='SOR w=1.5')
-# plt.xscale('log')
-# plt.yscale('log')
-# plt.xlabel('Grid size')
-# plt.ylabel('Time (s)')
-# plt.legend()
-# plt.show()
-# plt.close()
-
-# # %%
-# # plot errors vs iterations
-# plt.figure(1, figsize=(6,6))
-# plt.plot(iters_j, errors_j, label='Jacobi')
-# plt.plot(iters_gs, errors_gs, label='Gauss-Seidel')
-# plt.plot(iters_sor12, errors_sor12, label='SOR w=1.2')
-# plt.plot(iters_sor15, errors_sor15, label='SOR w=1.5')
-# plt.yscale('log')
-# plt.xlabel('Iterations')
-# plt.ylabel('Error')
-# plt.legend()
-# plt.show()
-# plt.close()
-
-# %% Problem 4'
+# %% Problem 4
 spar_time = []
 jac_time = []
 gs_time = []
 sor12_time = []
 sor15_time = []
 
-N = 64
-# xx,yy, rho = generate_rho(N=N, xmin=-5, xmax=5, ymin=-5,ymax=5)
-# A = generate_the_laplace_matrix_with_size(N=N)
-# A = csc_matrix(A)
-# b = generate_the_rhs_vector_with_size(N=N, rho=rho, dx=10/(N-1), dy=10/(N-1))
-# start = time.time()
-# x = splinalg.spsolve(A,b)
-# end = time.time()
-# spar_time.append(end-start)
-# print('Sparse solver done')
+for N in [128, 64, 32]:
+    xx,yy, rho = generate_rho(N=N, xmin=-5, xmax=5, ymin=-5,ymax=5)
+    A = generate_the_laplace_matrix_with_size(N=N)
+    A = csc_matrix(A)
+    b = generate_the_rhs_vector_with_size(N=N, rho=rho, dx=10/(N-1), dy=10/(N-1))
+    start = time.time()
+    x = splinalg.spsolve(A,b)
+    end = time.time()
+    spar_time.append(end-start)
+    print('Sparse solver done')
+    _,_, rho = generate_rho(N=N, xmin=-5, xmax=5, ymin=-5, ymax=5)
 
-_,_, rho = generate_rho(N=N, xmin=-5, xmax=5, ymin=-5, ymax=5)
+    xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
+    start = time.time()
+    u, iters_j, errors_j = relax(u, method='jacobi', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy)
+    end = time.time()
+    jac_time.append(end-start)
+    print('Jacobi relaxation done')
 
-xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-start = time.time()
-u, iters_j, errors_j = relax(u, method='jacobi', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy)
-end = time.time()
-jac_time.append(end-start)
-print('Jacobi relaxation done')
+
+    xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
+    start = time.time()
+    u, iters_gs, errors_gs = relax(u, method='gauss-seidel', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy)
+    end = time.time()
+    gs_time.append(end-start)
+    print('Gauss-Seidel relaxation done')
+
+    xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
+    start = time.time()
+    u, iters_sor12, errors_sor12 = relax(u, method='sor', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy, w=1.2)
+    end = time.time()
+    sor12_time.append(end-start)
+    print('SOR w=1.2 relaxation done')
+
+    xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
+    start = time.time()
+    u, iters_sor15, errors_sor15 = relax(u, method='sor', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy, w=1.5)
+    end = time.time()
+    sor15_time.append(end-start)
+    print('SOR w=1.5 relaxation done')
 
 # %%
-xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-start = time.time()
-u, iters_gs, errors_gs = relax(u, method='gauss-seidel', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy)
-end = time.time()
-gs_time.append(end-start)
-print('Gauss-Seidel relaxation done')
-
-# %%
-xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-start = time.time()
-u, iters_sor12, errors_sor12 = relax(u, method='sor', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy, w=1.2)
-end = time.time()
-sor12_time.append(end-start)
-print('SOR w=1.2 relaxation done')
-
-# %%
-xx, yy, dx, dy, u = generate_mash(N=N, buff=1, xmin=-5, xmax=5, ymin=-5, ymax=5)
-start = time.time()
-u, iters_sor15, errors_sor15 = relax(u, method='sor', tolerance=1e-7, maxiter=3e4, rho=rho, dx=dx, dy=dy, w=1.5)
-end = time.time()
-sor15_time.append(end-start)
-print('SOR w=1.5 relaxation done')
+plt.figure(1, figsize=(6,6))
+plt.plot([128, 64, 32], spar_time, label='Sparse solver')
+plt.plot([128, 64, 32], jac_time, label='Jacobi')
+plt.plot([128, 64, 32], gs_time, label='Gauss-Seidel')
+plt.plot([128, 64, 32], sor12_time, label='SOR w=1.2')
+plt.plot([128, 64, 32], sor15_time, label='SOR w=1.5')
+plt.xscale('log')
+plt.yscale('log')
+plt.xlabel('Grid size')
+plt.ylabel('Time (s)')
+plt.legend()
+plt.show()
+plt.close()
 
 # # %%
 # # plot errors vs iterations
