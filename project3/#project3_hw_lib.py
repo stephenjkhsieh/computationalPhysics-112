@@ -1,9 +1,8 @@
 # %%
-import matplotlib.pyplot as plt
 import numpy as np
 from numba import njit, prange
 from scipy.sparse import dia_array
-
+import matplotlib.pyplot as plt
 
 def generate_1_4_1_dia(usize=4):
     ex = np.ones(usize)
@@ -12,85 +11,79 @@ def generate_1_4_1_dia(usize=4):
     A = dia_array((data, offsets), shape=(usize, usize)).toarray()
     return A
 
-
 def generate_the_laplace_matrix_with_size(N=4, periodic=False):
     """
     assume sqrt(N) is an integer.
 
     """
-    nsq = N * N
-    A = np.zeros((nsq, nsq))
-    u = generate_1_4_1_dia(N)
+    nsq = N*N
+    A   = np.zeros((nsq,nsq))
+    u   = generate_1_4_1_dia(N)
 
     d_matrix = generate_1_4_1_dia(N)
     o_matrix = -np.identity(N)
-    z_matrix = np.zeros((N, N))
+    z_matrix = np.zeros((N,N))
 
-    init_matrix_kernel(N, A, u, d_matrix, o_matrix, z_matrix, periodic=periodic)
+    init_matrix_kernel(N,A,u,d_matrix,o_matrix,z_matrix, periodic=periodic)
     return A
 
-
 @njit(parallel=True)
-def init_matrix_kernel(N, A, u, d_matrix, o_matrix, z_matrix, periodic):
+def init_matrix_kernel(N,A,u,d_matrix,o_matrix, z_matrix, periodic):
     for i in prange(N):
         for j in range(N):
-            if u[i, j] == 4:
+            if u[i,j] == 4:
                 # the elemen is another 1_4_1 matrix
                 suba = d_matrix
-            elif u[i, j] == -1:
+            elif u[i,j] == -1:
                 suba = o_matrix
             else:
                 suba = z_matrix
-
+            
             for i2 in range(N):
                 for j2 in range(N):
-                    ii = i2 + i * N
-                    jj = j2 + j * N
-                    A[ii, jj] = suba[i2, j2]
+                    ii = i2 + i*N
+                    jj = j2 + j*N
+                    A[ii,jj] = suba[i2,j2]
     if periodic:
         for i in prange(N):
-            A[i * N, i * N + N - 1] = -1
-            A[i * N + N - 1, i * N] = -1
-            A[i, (N - 1) * N + i] = -1
-            A[(N - 1) * N + i, i] = -1
+            A[i*N, i*N+N-1] = -1
+            A[i*N+N-1, i*N] = -1
+            A[i, (N-1)*N+i] = -1
+            A[(N-1)*N+i, i] = -1
     return A
-
 
 def convert_solution(x):
     usize = np.sqrt(len(x))
-    u = x.reshape(int(usize), int(usize)).transpose()
+    u = x.reshape(int(usize),int(usize)).transpose()
     return u
 
-
-def generate_rho(N, xmin=-1, xmax=1, ymin=-1, ymax=1):
+def generate_rho(N, xmin=-1, xmax=1, ymin=-1,ymax=1):
     x = np.linspace(xmin, xmax, N)
     y = np.linspace(ymin, ymax, N)
 
-    xx, yy = np.meshgrid(x, y, indexing="ij")
+    xx,yy  = np.meshgrid(x,y, indexing='ij')
 
-    r1 = (xx + 1.5) ** 2 + yy**2
-    r2 = (xx - 1.5) ** 2 + yy**2
-    rho = np.exp(-5 / 4 * r1**2) + 3 / 2 * np.exp(-(r2**2))
-    return xx, yy, rho
-
+    r1 = (xx + 1.5)**2 + yy**2
+    r2 = (xx - 1.5)**2 + yy**2
+    rho  = np.exp(-5/4*r1**2) + 3/2*np.exp(-r2**2)
+    return xx,yy, rho
 
 def generate_the_rhs_vector_with_size(N=4, rho=None, dx=1, dy=1):
     if rho is None:
-        b = np.zeros(N * N)
-        b[len(b) // 2] = 1
-        b = -b * dx * dy
+        b = np.zeros(N*N)
+        b[len(b)//2] = 1
+        b = -b * dx*dy
     else:
-        b = np.zeros(N * N)
+        b = np.zeros(N*N)
         b = rho.flatten()
-        b = -b * dx * dy
-
+        b = -b * dx*dy
+        
         # # Cos boundary condition
         # b[-N:] += np.cos(3*np.pi*np.arange(1,N+1)/N)
         # b[:N] -= np.cos(3*np.pi*np.arange(1,N+1)/N)
         # b[::N] -= np.cos(3*np.pi*np.arange(1,N+1)/N)
         # b[N-1::N] += np.cos(3*np.pi*np.arange(1,N+1)/N)
     return b
-
 
 def generate_mash(N=4, buff=1, xmin=-1, xmax=1, ymin=-1, ymax=1, periodic=False):
     """
@@ -110,7 +103,7 @@ def generate_mash(N=4, buff=1, xmin=-1, xmax=1, ymin=-1, ymax=1, periodic=False)
         Minimum value of y.
     ymax : float
         Maximum value of y.
-
+    
     Returns
     -------
     xx : 2D numpy array
@@ -127,18 +120,17 @@ def generate_mash(N=4, buff=1, xmin=-1, xmax=1, ymin=-1, ymax=1, periodic=False)
     if periodic:
         n = N
     else:
-        n = N + 2 * buff
+        n = N+2*buff
     x = np.linspace(xmin, xmax, n)
     y = np.linspace(ymin, ymax, n)
     dx = x[1] - x[0]
     dy = y[1] - y[0]
-    xx, yy = np.meshgrid(x, y, indexing="ij")
+    xx, yy = np.meshgrid(x, y, indexing='ij')
     u = np.zeros((n, n))
     # # seed 210
     # np.random.seed(210)
     # u = -np.random.rand(N+2*buff, N+2*buff)
     return xx, yy, dx, dy, u
-
 
 @njit(parallel=True)
 def jacobi(u, uold, nx, ny, dx, dy, rho, periodic):
@@ -161,20 +153,16 @@ def jacobi(u, uold, nx, ny, dx, dy, rho, periodic):
     u : 2D numpy array
         Updated solution.
     """
-    for i in prange(1, nx - 1):
-        for j in range(1, ny - 1):
-            u[i, j] = 0.25 * (
-                uold[i - 1, j]
-                + uold[i + 1, j]
-                + uold[i, j - 1]
-                + uold[i, j + 1]
-                - dx * dy * rho[i - 1, j - 1]
-            )
-    # boundary conditions
-    u[0, :] = u[-1, :]
-    u[:, 0] = u[:, -1]
+    if periodic:
+        for i in prange(0, nx):
+            for j in range(0, ny):
+                u[i, j] = 0.25 * (uold[i - 1, j] + uold[(i+1)%nx, j] + uold[i, j - 1] + uold[i, (j+1)%ny] - dx*dy*rho[i,j])
+                u[0, 0] = 0
+    else:
+        for i in prange(1, nx-1):
+            for j in range(1, ny-1):
+                u[i, j] = 0.25 * (uold[i - 1, j] + uold[i + 1, j] + uold[i, j - 1] + uold[i, j + 1] - dx*dy*rho[i-1,j-1])
     return u
-
 
 @njit(parallel=True)
 def gauss_seidel(u, uold, nx, ny, dx, dy, rho, periodic):
@@ -197,20 +185,16 @@ def gauss_seidel(u, uold, nx, ny, dx, dy, rho, periodic):
     u : 2D numpy array
         Updated solution.
     """
-    for i in prange(1, nx - 1):
-        for j in range(1, ny - 1):
-            u[i, j] = 0.25 * (
-                u[i - 1, j]
-                + u[i, j - 1]
-                + uold[i + 1, j]
-                + uold[i, j + 1]
-                - dx * dy * rho[i - 1, j - 1]
-            )
-    # boundary conditions
-    u[0, :] = u[-1, :]
-    u[:, 0] = u[:, -1]
+    if periodic:
+        for i in prange(0, nx):
+            for j in range(0, ny):
+                u[i, j] = 0.25 * (u[i - 1, j] + u[i, j - 1] + uold[(i+1)%nx, j] + uold[i, (j+1)%ny] - dx*dy*rho[i,j])
+                u[0, 0] = 0
+    else:
+        for i in prange(1, nx-1):
+            for j in range(1, ny-1):
+                u[i, j] = 0.25 * (u[i - 1, j] + u[i, j - 1] + uold[i + 1, j] + uold[i, j + 1] - dx*dy*rho[i-1,j-1])
     return u
-
 
 def sor(u, uold, nx, ny, dx, dy, rho, w, periodic):
     """
@@ -239,8 +223,7 @@ def sor(u, uold, nx, ny, dx, dy, rho, w, periodic):
     u = w * u + (1 - w) * uold
     return u
 
-
-def relax(u, method="jacobi", tolerance=1e-4, maxiter=1e6, periodic=False, **kwargs):
+def relax(u, method='jacobi', tolerance=1e-4, maxiter=1e6, periodic=False,**kwargs):
     """
     Relax the solution using Jacobi, Gauss-Seidel, or SOR method.
 
@@ -276,33 +259,32 @@ def relax(u, method="jacobi", tolerance=1e-4, maxiter=1e6, periodic=False, **kwa
     # u[:,-1] = np.cos(3*np.pi*np.arange(1,ny+1)/ny)
     # u[:,0] = -np.cos(3*np.pi*np.arange(1,ny+1)/ny)
 
-    if method == "jacobi":
+    if method == 'jacobi':
         iter_func = jacobi
-    elif method == "gauss-seidel":
+    elif method == 'gauss-seidel':
         iter_func = gauss_seidel
-    elif method == "sor":
+    elif method == 'sor':
         iter_func = sor
     else:
-        raise ValueError("Invalid method")
-
+        raise ValueError('Invalid method')
+    
     for it in range(int(maxiter)):
         uold = u.copy()
         u = iter_func(u, uold, nx, ny, periodic=periodic, **kwargs)
         errors[it] = np.linalg.norm((u - uold)) / np.sqrt(n)
         if errors[it] < tolerance:
             break
-    return u, iters[: it + 1], errors[: it + 1]
+    return u, iters[:it+1], errors[:it+1]
 
-
-def plot_solution(xx, yy, u):
-    plt.figure(1, figsize=(6, 6))
-    plt.pcolormesh(xx, yy, u)
-    plt.axis("equal")
+def plot_solution(xx,yy,u):
+    plt.figure(1, figsize=(6,6))
+    plt.pcolormesh(xx,yy,u)
+    plt.axis('equal')
     plt.colorbar()
-    plt.contour(xx, yy, u, 5, colors="w")
-    plt.xlim(-5, 5)
-    plt.ylim(-5, 5)
-    plt.xticks(np.arange(-5, 6, 1))
-    plt.yticks(np.arange(-5, 6, 1))
+    plt.contour(xx,yy, u, 5, colors="w")
+    plt.xlim(-5,5)
+    plt.ylim(-5,5)
+    plt.xticks(np.arange(-5,6,1))
+    plt.yticks(np.arange(-5,6,1))
     plt.show()
     plt.close()
